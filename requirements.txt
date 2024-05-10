@@ -1,0 +1,8 @@
+transformers
+datasets
+jiwer
+opencv-python
+tokenizers
+huggingface-hub
+matplotlib
+accelerate
