@@ -110,16 +110,19 @@ model.config.num_beams = 4
 print("Number of training examples:", len(train_dataset))
 print("Number of validation examples:", len(eval_dataset))
 
+evalStepCount = (len(train_dataset) + len(eval_dataset))/3 # Evaluate every 1/3 epooch
+
 training_args = Seq2SeqTrainingArguments(
     num_train_epochs=50,
     predict_with_generate=True,
-    evaluation_strategy="steps",
+    evaluation_strategy="epoch",
     output_dir="./checkpoints/",
     per_device_train_batch_size=4,
     per_device_eval_batch_size=4,
     logging_steps=2,
     save_steps=2000,
-    eval_steps=100,
+    eval_steps=evalStepCount,
+    logging_dir="./logs" # log directory for tensorboard to pick up the result
    # max_steps=2
 )
 
