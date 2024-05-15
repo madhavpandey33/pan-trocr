@@ -110,7 +110,7 @@ model.config.num_beams = 4
 print("Number of training examples:", len(train_dataset))
 print("Number of validation examples:", len(eval_dataset))
 
-evalStepCount = (len(train_dataset) + len(eval_dataset))/2 # Evaluate every 1/3 epooch
+evalStepCount = (len(train_dataset) + len(eval_dataset))/2 # Evaluate every 1/2 epooch
 
 training_args = Seq2SeqTrainingArguments(
     num_train_epochs=50,
