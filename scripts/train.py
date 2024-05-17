@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import torch
 from torch.utils.data import Dataset
 from PIL import Image
-from transformers import ViTFeatureExtractor, RobertaTokenizer, TrOCRProcessor
+from transformers import ViTFeatureExtractor, RobertaTokenizer, TrOCRProcessor, ViTImageProcessor
 from transformers import VisionEncoderDecoderModel
 from transformers import TrOCRProcessor
 from transformers import Seq2SeqTrainer, Seq2SeqTrainingArguments
@@ -24,18 +24,18 @@ root_dir = "./dataset/"
 def dataset_generator(data_path):
     with open(data_path) as f:
         dataset = f.readlines()
-    counter = 0
+    #counter = 0
 
     dataset_list = []
     for i in range(len(dataset)):
-        if counter > 30000:
-             break
+        #if counter > 10:
+        #     break
         image_id = dataset[i].split("\n")[0].split(' ')[0].strip()
         # vocab_id = int(dataset[i].split(",")[1].strip())
         text = dataset[i].split("\n")[0].split(' ')[1].strip()
         row = [image_id, text]
         dataset_list.append(row)
-        counter += 1
+        #counter += 1
 
     dataset_df = pd.DataFrame(dataset_list, columns=['file_name', 'text'])
     # dataset_df.head()
@@ -79,9 +79,11 @@ class IAMDataset(Dataset):
 encode = 'google/vit-base-patch16-224-in21k'
 decode = 'flax-community/roberta-hindi'
 
-feature_extractor=ViTFeatureExtractor.from_pretrained(encode)
+#feature_extractor=ViTFeatureExtractor.from_pretrained(encode)
+
+image_processor = ViTImageProcessor.from_pretrained(encode)
 tokenizer = RobertaTokenizer.from_pretrained(decode)
-processor = TrOCRProcessor(feature_extractor=feature_extractor, tokenizer=tokenizer)
+processor = TrOCRProcessor(image_processor=image_processor, tokenizer=tokenizer)
 
 train_dataset = IAMDataset(root_dir=root_dir,
                            df=train_df,
@@ -115,17 +117,20 @@ evalStepCount = (len(train_dataset) + len(eval_dataset))/2 # Evaluate every 1/2 
 training_args = Seq2SeqTrainingArguments(
     num_train_epochs=50,
     predict_with_generate=True,
-    evaluation_strategy="steps",
+    evaluation_strategy="epoch",
     output_dir="./checkpoints/",
     per_device_train_batch_size=4,
     per_device_eval_batch_size=4,
     logging_steps=2,
     save_steps=2000,
-    eval_steps=evalStepCount,
+    #eval_steps=evalStepCount,
+    save_total_limit=2,
+    report_to="tensorboard",
+    logging_dir='./logs',
    # max_steps=2
 )
 
-cer_metric = load_metric("cer")
+cer_metric = load_metric("cer", trust_remote_code=True)
 
 def compute_metrics(pred):
     labels_ids = pred.label_ids
@@ -141,7 +146,7 @@ def compute_metrics(pred):
 # instantiate trainer
 trainer = Seq2SeqTrainer(
     model=model,
-    tokenizer=processor.feature_extractor,
+    tokenizer=processor.image_processor,
     args=training_args,
     compute_metrics=compute_metrics,
     train_dataset=train_dataset,
@@ -151,5 +156,5 @@ trainer = Seq2SeqTrainer(
 
 trainer.train()
 
-os.makedirs("model/")
-model.save_pretrained("model/")
+os.makedirs("model-10/")
+model.save_pretrained("model-10/")
